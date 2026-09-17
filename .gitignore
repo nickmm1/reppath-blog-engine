@@ -1,0 +1,7 @@
+thumbnails/
+blogs/*.html
+blogs/*.meta.json
+*.token
+.env
+__pycache__/
+*.pyc
