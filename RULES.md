@@ -42,7 +42,7 @@ Output is BODY HTML ONLY. No `<html>`, `<head>`, or `<body>` wrapper.
 ## Internal links (use ONLY these real pages; pick the 4-7 most relevant per post)
 Break in: /pages/how-to-break-into-medical-device-sales, /pages/how-to-break-into-medical-device-sales-with-no-experience, /pages/medical-sales-no-experience, /pages/what-is-medical-device-sales, /pages/medical-sales-after-college
 Interview: /pages/medical-sales-interview-prep, /pages/medical-sales-interview-questions, /pages/what-medical-device-sales-hiring-managers-actually-look-for, /pages/medical-sales-30-60-90-day-plan
-Resume/brand: /pages/medical-device-sales-resume, /pages/medical-sales-resume-guide, /pages/medical-sales-brag-book, /pages/medical-sales-linkedin-guide, /pages/medical-sales-networking-guide
+Resume/brand: /pages/medical-device-sales-resume, /pages/medical-sales-brag-book, /pages/medical-sales-linkedin-guide, /pages/medical-sales-networking-guide
 Salary/career: /pages/medical-sales-salary-guide, /pages/medical-device-sales-salary-by-company-2026, /pages/medical-device-sales-salary-by-specialty-2026, /pages/medical-device-sales-salary-report-2026, /pages/medical-sales-career-path
 Pharma: /pages/how-to-break-into-pharmaceutical-sales, /pages/pharmaceutical-sales-training, /pages/how-to-transition-from-b2b-sales-to-pharmaceutical-sales
 Capital/specialty: /pages/capital-equipment-sales-guide, /pages/how-to-break-into-capital-equipment-sales, /pages/orthopedic-device-sales-guide, /pages/spine-sales-guide, /pages/cardiovascular-sales-guide, /pages/surgical-robotics-sales-guide, /pages/diagnostic-sales-guide
