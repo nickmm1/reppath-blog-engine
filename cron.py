@@ -12,7 +12,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import shopify_ops, make_thumb, write_blog
 
-CHANNEL = os.environ.get("CHANNEL", "https://www.youtube.com/@JoeLicata28")
+import urllib.request, html as _html
+CHANNEL_ID = os.environ.get("CHANNEL_ID", "UCONIT7SJmFjwgiA86YEQm5w")  # @JoeLicata28
 MAX_PER_RUN = int(os.environ.get("MAX_PER_RUN", "1"))
 MIN_WORDS = 1200  # transcripts shorter than this are short clips, skip
 
@@ -21,17 +22,22 @@ def slugify(t):
     return re.sub(r"[^a-z0-9]+", "-", t).strip("-")[:70]
 
 def channel_videos():
-    """Newest-first list of (video_id, title) for long-form uploads on the channel."""
-    out = subprocess.run(
-        ["yt-dlp", "--flat-playlist", "--no-warnings", "--print", "%(id)s\t%(title)s",
-         CHANNEL + "/videos"],
-        capture_output=True, text=True, timeout=300)
-    vids = []
-    for line in out.stdout.splitlines():
-        if "\t" in line:
-            vid, title = line.split("\t", 1)
-            vids.append((vid.strip(), title.strip()))
-    return vids
+    """Newest-first (video_id, title) from the channel's YouTube RSS feed (no auth, stable).
+
+    The feed returns the 15 most recent uploads, which is enough to catch new episodes on
+    a 3x-per-week cadence. The yt-dlp channel-tab endpoint is unreliable, so we avoid it.
+    """
+    rss = "https://www.youtube.com/feeds/videos.xml?channel_id=" + CHANNEL_ID
+    req = urllib.request.Request(rss, headers={"User-Agent": "Mozilla/5.0"})
+    xml = urllib.request.urlopen(req, timeout=60).read().decode("utf-8", "ignore")
+    entries = re.findall(r"<entry>(.*?)</entry>", xml, re.DOTALL)
+    out = []
+    for e in entries:
+        vid = re.search(r"<yt:videoId>([^<]+)</yt:videoId>", e)
+        title = re.search(r"<media:title>([^<]+)</media:title>", e) or re.search(r"<title>([^<]+)</title>", e)
+        if vid and title:
+            out.append((vid.group(1).strip(), _html.unescape(title.group(1).strip())))
+    return out
 
 def fetch_transcript(video_id):
     """Return plain-text transcript via yt-dlp auto-subs, or '' if none."""
