@@ -39,19 +39,8 @@ def channel_videos():
             out.append((vid.group(1).strip(), _html.unescape(title.group(1).strip())))
     return out
 
-def fetch_transcript(video_id):
-    """Return plain-text transcript via yt-dlp auto-subs, or '' if none."""
-    with tempfile.TemporaryDirectory() as d:
-        subprocess.run(
-            ["yt-dlp", "--skip-download", "--write-auto-subs", "--sub-langs", "en",
-             "--sub-format", "vtt", "--no-warnings", "-o", os.path.join(d, "%(id)s.%(ext)s"),
-             "https://www.youtube.com/watch?v=" + video_id],
-            capture_output=True, text=True, timeout=300)
-        vtts = glob.glob(os.path.join(d, "*.vtt"))
-        if not vtts:
-            return ""
-        raw = open(vtts[0], encoding="utf-8", errors="ignore").read()
-    lines, seen, prev = [], set(), None
+def _parse_vtt(raw):
+    lines, prev = [], None
     for ln in raw.splitlines():
         if "-->" in ln or ln.strip() in ("WEBVTT", "") or ln.strip().isdigit():
             continue
@@ -59,6 +48,50 @@ def fetch_transcript(video_id):
         if txt and txt != prev:
             lines.append(txt); prev = txt
     return " ".join(lines)
+
+def _ytdlp_transcript(video_id):
+    with tempfile.TemporaryDirectory() as d:
+        subprocess.run(
+            ["yt-dlp", "--skip-download", "--write-auto-subs", "--write-subs",
+             "--sub-langs", "en.*,en", "--sub-format", "vtt/srt/best", "--no-warnings",
+             "-o", os.path.join(d, "%(id)s.%(ext)s"),
+             "https://www.youtube.com/watch?v=" + video_id],
+            capture_output=True, text=True, timeout=300)
+        subs = glob.glob(os.path.join(d, "*.vtt")) + glob.glob(os.path.join(d, "*.srt"))
+        if not subs:
+            return ""
+        return _parse_vtt(open(subs[0], encoding="utf-8", errors="ignore").read())
+
+def _apify_transcript(video_id):
+    """Reliable fallback via Apify (johnvc/YoutubeTranscripts) if APIFY_API_TOKEN is set."""
+    import urllib.request, json as _json
+    token = os.environ.get("APIFY_API_TOKEN")
+    if not token:
+        return ""
+    url = ("https://api.apify.com/v2/acts/johnvc~YoutubeTranscripts/run-sync-get-dataset-items?token=" + token)
+    body = _json.dumps({"youtube_url": ["https://www.youtube.com/watch?v=" + video_id],
+                        "languages": ["en"], "include_metadata": False}).encode()
+    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+    try:
+        items = _json.loads(urllib.request.urlopen(req, timeout=300).read())
+        for it in items:
+            t = (it.get("non_timestamped") or it.get("text") or "").strip()
+            if t:
+                return t
+    except Exception as e:
+        print("  apify fallback error:", e)
+    return ""
+
+def fetch_transcript(video_id):
+    """Plain-text transcript. Tries yt-dlp (twice, spaced out), then Apify fallback."""
+    import time
+    for attempt in range(2):
+        t = _ytdlp_transcript(video_id)
+        if len(t.split()) >= MIN_WORDS:
+            return t
+        time.sleep(4)
+    t2 = _apify_transcript(video_id)
+    return t2 if len(t2.split()) > len(t.split()) else t
 
 def main():
     q = json.load(open(os.path.join(HERE, "queue.json"), encoding="utf-8"))
